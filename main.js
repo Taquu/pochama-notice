@@ -1,43 +1,56 @@
-// Modules to control application life and create native browser window
-const { app, BrowserWindow } = require('electron')
-const path = require('node:path')
+// --- 必要なモジュールを 1 行に ---
+const { app, BrowserWindow, Tray, screen } = require('electron');
+const path = require('path');
 
-function createWindow () {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+let tray, notifier;
+
+/* キャラ用ウインドウ */
+function createNotifier() {
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  notifier = new BrowserWindow({
+    width: 320,
+    height: 240,
+    x: Math.round((width - 320) / 2),
+    y: height,              // まずは画面外
+    frame: false,
+    transparent: true,
+    resizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
+    nodeIntegration: true,      // ← これで renderer から require が使える
+    contextIsolation: false     // （学習フェーズでは false で OK）
     }
-  })
-
-  // and load the index.html of the app.
-  mainWindow.loadFile('index.html')
-
-  // Open the DevTools.
-  // mainWindow.webContents.openDevTools()
+  });
+  notifier.setIgnoreMouseEvents(true, { forward: true });
+  notifier.loadFile('notifier.html');
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
+/* Tray アイコン */
+function setupTray() {
+  tray = new Tray(path.join(__dirname, 'assets', 'iconTemplate.png'));
+  tray.setToolTip('Mochi Notifier');
+  tray.on('click', () => {
+    console.log('tray clicked');   // ← 追加
+    popUp('🍡 これはテスト通知でありんす〜');
+  });
+}
+
+/* ポップアップ共通関数 */
+function popUp(text) {
+  const { height } = screen.getPrimaryDisplay().workAreaSize;
+  notifier.webContents.send('notify', text);          // メッセージ送信
+  notifier.setPosition(notifier.getPosition()[0], height - 240);  // ニョキッ
+  setTimeout(() => notifier.setPosition(notifier.getPosition()[0], height), 5000); // 戻る
+}
+
+/* ───── アプリ初期化はここだけ ───── */
 app.whenReady().then(() => {
-  createWindow()
+  if (process.platform === 'darwin') app.dock.hide(); // Dock アイコン非表示
+  createNotifier();
+  setupTray();
+  console.log('notifier created:', !!notifier); // true なら生成済
+});
 
-  app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
-
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit()
-})
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+/* すべてのウインドウを閉じたら終了（mac でも終了させる場合）*/
+app.on('window-all-closed', () => app.quit());

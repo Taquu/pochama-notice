@@ -1,0 +1,14 @@
+html,body{margin:0;padding:0;background:transparent;}
+#wrap{
+    position:fixed;bottom:0;left:50%;transform:translate(-50%,100%); /* 最初は見えない */
+    width:320px;height:240px;text-align:center;pointer-events:none;
+    transition:transform .4s ease-out;
+}
+#wrap.show{transform:translate(-50%,0);}  /* 表示状態 */
+
+#msg{
+    margin-top:4px;
+    font:18px/1.3 "Helvetica Neue",sans-serif;
+    color:#ffffff;
+    text-shadow:0 1px 3px #000;
+}
