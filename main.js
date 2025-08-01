@@ -32,7 +32,7 @@ function setupTray() {
   tray.setToolTip('Mochi Notifier');
   tray.on('click', () => {
     console.log('tray clicked');   // ← 追加
-    popUp('🍡 これはテスト通知でありんす〜');
+    popUp('🍡 ポチャポチャ？');
   });
 }
 
